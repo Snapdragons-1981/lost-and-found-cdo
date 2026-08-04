@@ -1,8 +1,9 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+/* eslint-disable @typescript-eslint/no-require-imports */
+const { PrismaClient } = require(".prisma/client/default");
+const { PrismaPg } = require("@prisma/adapter-pg");
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+  prisma: ReturnType<typeof createPrismaClient> | undefined;
 };
 
 function createPrismaClient() {
