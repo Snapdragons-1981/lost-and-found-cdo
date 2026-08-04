@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     // Build conversations list
     const conversationsMap = new Map();
 
-    sentMessages.forEach((msg) => {
+    sentMessages.forEach((msg: { receiverId: string; receiver: Record<string, unknown>; id: string; content: string; createdAt: Date; isRead: boolean }) => {
       const otherUserId = msg.receiverId;
       if (!conversationsMap.has(otherUserId)) {
         conversationsMap.set(otherUserId, {
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    receivedMessages.forEach((msg) => {
+    receivedMessages.forEach((msg: { senderId: string; sender: Record<string, unknown>; id: string; content: string; createdAt: Date; isRead: boolean }) => {
       const otherUserId = msg.senderId;
       if (!conversationsMap.has(otherUserId)) {
         conversationsMap.set(otherUserId, {

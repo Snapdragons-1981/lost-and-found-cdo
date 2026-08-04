@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
         reportsThisWeek,
         reportsThisMonth,
         recentReports,
-        topBarangays: topBarangays.map((b) => ({
+        topBarangays: topBarangays.map((b: { barangay: string | null; _count: { id: number } }) => ({
           name: b.barangay || "Unknown",
           count: b._count.id,
         })),
