@@ -1,0 +1,260 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique
+  email         String    @unique
+  firstName     String
+  lastName      String
+  phone         String?
+  avatar        String?
+  role          UserRole  @default(USER)
+  isVerified    Boolean   @default(false)
+  preferredLang Language  @default(EN)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  reports       Report[]
+  sentMessages  Message[]      @relation("SentMessages")
+  receivedMessages Message[]   @relation("ReceivedMessages")
+  notifications Notification[]
+  bookmarks     Bookmark[]
+  badges        UserBadge[]
+  comments      Comment[]
+
+  @@index([clerkId])
+  @@index([email])
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+  BARANGAY
+}
+
+enum Language {
+  EN
+  CEB
+  FIL
+}
+
+model Report {
+  id              String      @id @default(cuid())
+  title           String
+  description     String
+  type            ReportType
+  status          ReportStatus @default(OPEN)
+  userId          String
+  
+  category        String
+  color           String?
+  brand           String?
+  uniqueMarks     String?
+  serialNumber    String?
+  condition       String?
+  estimatedValue  Float?
+  
+  locationName    String?
+  barangay        String?
+  streetAddress   String?
+  landmark        String?
+  latitude        Float?
+  longitude       Float?
+  
+  dateLost        DateTime?
+  dateFound       DateTime?
+  timeDescription String?
+  
+  keptBy          String?
+  keptByDetails   String?
+  
+  contactPhone    String?
+  contactMessenger String?
+  contactEmail    String?
+  
+  isVerified      Boolean   @default(false)
+  verifiedBy      String?
+  
+  isEmergency     Boolean   @default(false)
+  emergencyType   String?
+  
+  viewCount       Int       @default(0)
+  bookmarkCount   Int       @default(0)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  resolvedAt      DateTime?
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images          Image[]
+  matchesAsLost   Match[]   @relation("LostMatches")
+  matchesAsFound  Match[]   @relation("FoundMatches")
+  bookmarks       Bookmark[]
+  comments        Comment[]
+
+  @@index([type])
+  @@index([status])
+  @@index([category])
+  @@index([barangay])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type, status])
+  @@index([category, barangay])
+}
+
+enum ReportType {
+  LOST
+  FOUND
+}
+
+enum ReportStatus {
+  OPEN
+  MATCHED
+  RESOLVED
+  CLOSED
+  EXPIRED
+}
+
+model Image {
+  id          String   @id @default(cuid())
+  reportId    String
+  url         String
+  publicId    String
+  alt         String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+}
+
+model Match {
+  id              String      @id @default(cuid())
+  lostReportId    String
+  foundReportId   String
+  confidence      Float
+  status          MatchStatus @default(PENDING)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  lostReport      Report      @relation("LostMatches", fields: [lostReportId], references: [id])
+  foundReport     Report      @relation("FoundMatches", fields: [foundReportId], references: [id])
+
+  @@unique([lostReportId, foundReportId])
+  @@index([status])
+}
+
+enum MatchStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model Message {
+  id          String    @id @default(cuid())
+  senderId    String
+  receiverId  String
+  content     String
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  sender      User      @relation("SentMessages", fields: [senderId], references: [id])
+  receiver    User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([senderId, receiverId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  title       String
+  message     String
+  link        String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+}
+
+model Bookmark {
+  id          String   @id @default(cuid())
+  userId      String
+  reportId    String
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, reportId])
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  reportId    String
+  userId      String
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([reportId])
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  icon        String?
+  color       String?
+  points      Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id          String   @id @default(cuid())
+  userId      String
+  badgeId     String
+  earnedAt    DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge       Badge    @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String
+  entity      String
+  entityId    String?
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
